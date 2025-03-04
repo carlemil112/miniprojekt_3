@@ -14,7 +14,8 @@ def canny_edge():
     img = cv.imread(img_path)
     #img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
 
-    img = cv.cvtColor(img, cv.COLOR_RGB2GRAY)
+    #img = cv.cvtColor(img, cv.COLOR_RGB2GRAY)
+    #img = cv.cvtColor(img, cv.COLOR_RGB2HSV)
 
     win_name = 'canny'
     cv.namedWindow(win_name)
