@@ -20,10 +20,11 @@ if image_files:
     if image is not None:
         # Convert the image to HSV color space
         hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
- 
+        rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        grey_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         
         # Display the image
-        cv2.imshow("HSV Image", hsv_image)
+        cv2.imshow("Image", hsv_image)
         
         # Wait for a key press and close the image window
         cv2.waitKey(0)
