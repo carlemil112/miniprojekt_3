@@ -1,19 +1,34 @@
 import cv2 as cv
 import numpy as np
 import os
+import glob
+
+images = r"C:\Users\anne\Desktop\Daki\s2\projekter\miniprojekt_3\miniprojekt_3\Cropped and perspective corrected boards"
 
 # Main function containing the backbone of the program
 def main():
     print("+-------------------------------+")
     print("| King Domino points calculator |")
     print("+-------------------------------+")
-    image_path = r"C:\Users\anne\Documents\P0\Billeder\1.jpg"
-    if not os.path.isfile(image_path):
+    
+    # Retrieve list of images
+    image_list = glob.glob(os.path.join(images, "*.jpg"))
+
+    if not image_list:  # If no images found
+        print("No images found in the specified directory.")
+        exit()
+
+    image_path = image_list[0]  # Select the first image
+
+    if not os.path.isfile(image_path):  # Ensure valid file path
         print("Image not found")
-        return
+        exit()
+    
+    # Read and process the image
     image = cv.imread(image_path)
     tiles = get_tiles(image)
-    print(len(tiles))
+    print(f"Total tiles detected: {len(tiles)}")
+    
     for y, row in enumerate(tiles):
         for x, tile in enumerate(row):
             print(f"Tile ({x}, {y}):")
@@ -32,8 +47,9 @@ def get_tiles(image):
 # Determine the type of terrain in a tile
 def get_terrain(tile):
     hsv_tile = cv.cvtColor(tile, cv.COLOR_BGR2HSV)
-    hue, saturation, value = np.median(hsv_tile, axis=(0,1)) # Consider using median instead of mean
+    hue, saturation, value = np.median(hsv_tile, axis=(0,1))  # Consider using median instead of mean
     print(f"H: {hue}, S: {saturation}, V: {value}")
+    
     if 21 < hue < 106 and 75 < saturation < 255 and 42 < value < 198:
         return "Field"
     if 36.5 < hue < 48 and 117.5 < saturation < 168 and 39 < value < 50.5:
@@ -48,6 +64,7 @@ def get_terrain(tile):
         return "Mine"
     if 25.25 < hue < 32.75 and 54.25 < saturation < 98.5 and 68 < value < 117.5:
         return "Home"
+    
     return "Unknown"
 
 if __name__ == "__main__":
