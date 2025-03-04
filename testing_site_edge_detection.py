@@ -8,6 +8,9 @@ def callback(input):
 def canny_edge():
     root = os.getcwd()
     img_path = os.path.join(root, r'C:\Users\carle\Desktop\python_work\Miniprojekt_3\Cropped and perspective corrected boards\1.jpg')
+    if not img_path:
+            img_path = r"C:\Users\anne\Desktop\Daki\s2\projekter\miniprojekt_3\miniprojekt_3\Cropped and perspective corrected boards\1.jpg"
+
     img = cv.imread(img_path)
     #img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
 
