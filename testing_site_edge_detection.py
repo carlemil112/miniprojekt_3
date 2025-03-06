@@ -14,7 +14,7 @@ def canny_edge():
     img = cv.imread(img_path)
     #img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
 
-    #img = cv.cvtColor(img, cv.COLOR_RGB2GRAY)
+    img_gray = cv.cvtColor(img, cv.COLOR_RGB2GRAY)
     #img = cv.cvtColor(img, cv.COLOR_RGB2HSV)
 
     win_name = 'canny'
@@ -36,7 +36,7 @@ def canny_edge():
 
         contours, _ = cv.findContours(canny_edge_img, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
 
-
+ 
         img_contours = img.copy()
         for contour in contours:
             if cv.contourArea(contour) > 100:  #filter til små contours
@@ -53,3 +53,6 @@ def canny_edge():
 
 if __name__ == '__main__':
     canny_edge()
+
+
+
