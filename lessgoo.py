@@ -1,77 +1,68 @@
 import cv2
+import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib import pyplot as plt
 
-# Indlæs referencebillede af kongekrone
-crown_img = cv2.imread(r'Reference Tiles/reference_crown.jpg', cv2.IMREAD_GRAYSCALE)
+# Load the reference crown image
+crown_img = cv2.imread('Reference Tiles/reference_crown.jpg')
 
-# Indlæs full board billede, der skal opdeles i tiles
-board_img = cv2.imread(r'Cropped and perspective corrected boards\1.jpg', cv2.IMREAD_GRAYSCALE)
+# Convert the image to RGB
+reference_image = cv2.cvtColor(crown_img, cv2.COLOR_BGR2RGB)
 
-# SIFT detektor
+# Convert the image to grayscale
+gray_image = cv2.cvtColor(reference_image, cv2.COLOR_RGB2GRAY)
+
+# Create test image by adding Scale Invariance and Rotational Invariance
+# Instead of pyrDown, use resize to scale down the image by a smaller factor
+scale_factor = 0.75  # Adjust this factor to control the scale
+test_image = cv2.resize(reference_image, None, fx=scale_factor, fy=scale_factor, interpolation=cv2.INTER_LINEAR)
+
+# Rotate the image
+num_rows, num_cols = test_image.shape[:2]
+rotation_matrix = cv2.getRotationMatrix2D((num_cols/2, num_rows/2), 30, 1)
+test_image = cv2.warpAffine(test_image, rotation_matrix, (num_cols, num_rows))
+
+test_gray = cv2.cvtColor(test_image, cv2.COLOR_RGB2GRAY)
+
+# Display training and test images
+fx, plots = plt.subplots(1, 2, figsize=(20,10))
+
+# Reference Image
+plots[0].set_title("Reference Image")
+plots[0].imshow(reference_image)
+
+# Test Image
+plots[1].set_title("Test Image")
+plots[1].imshow(test_image)
+
+# Show the plot
+plt.show()
+
+# Use SIFT to detect keypoints and compute descriptors
 sift = cv2.SIFT_create()
 
-# BFMatcher objekt
-bf = cv2.BFMatcher(cv2.NORM_L2, crossCheck=True)
+train_keypoints, train_descriptor = sift.detectAndCompute(gray_image, None)
+test_keypoints, test_descriptor = sift.detectAndCompute(test_gray, None)
 
-# Find nøglepunkter og deskriptorer for reference kronebilledet
-keypoints_1, descriptors_1 = sift.detectAndCompute(crown_img, None)
+# BFMatcher with default parameters
+bf = cv2.BFMatcher()
 
-# Dimensioner for grid (antager 5x5 grid)
-grid_size = 5
-board_height, board_width = board_img.shape
+# Find the best matches between train and test image descriptors
+matches = bf.knnMatch(train_descriptor, test_descriptor, k=2)
 
-# Beregn dimensionerne for hver tile
-tile_height = board_height // grid_size
-tile_width = board_width // grid_size
+# Apply ratio test to keep good matches
+good_matches = []
+for m, n in matches:
+    if m.distance < 0.75 * n.distance:
+        good_matches.append(m)
 
-# Dictionary for at gemme resultaterne
-tile_results = {}
+# Draw the matches
+matched_image = cv2.drawMatches(reference_image, train_keypoints, test_image, test_keypoints, good_matches, None, flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
 
-# Iterer over grid for at dele brættet op i tiles
-tile_num = 1  # Bruges til at navngive tiles
-for row in range(grid_size):
-    for col in range(grid_size):
-        # Skær tile ud baseret på dets position i grid
-        tile_img = board_img[row * tile_height:(row + 1) * tile_height, col * tile_width:(col + 1) * tile_width]
+# Display the matched keypoints
+plt.figure(figsize=(20,10))
+plt.title('Matched Keypoints')
+plt.imshow(matched_image)
+plt.show()
 
-        # Find nøglepunkter og deskriptorer for tile-billedet
-        keypoints_2, descriptors_2 = sift.detectAndCompute(tile_img, None)
-
-        if descriptors_2 is not None:
-            # Matcher deskriptorer mellem kronebilledet og tile
-            matches = bf.match(descriptors_1, descriptors_2)
-
-            # Sorter matches efter distance (lavere er bedre)
-            matches = sorted(matches, key=lambda x: x.distance)
-
-            # Brug kun de bedste matches
-            good_matches_threshold = 5  # Juster denne værdi baseret på dine tests
-            good_matches = [m for m in matches if m.distance < 300]
-
-            # Gem resultatet (True hvis tile indeholder en kongekrone)
-            tile_results[f'Tile {tile_num}'] = len(good_matches) >= good_matches_threshold
-        else:
-            tile_results[f'Tile {tile_num}'] = False
-
-        # Visualiser de bedste 10 matches for hver tile, hvis der er en krone
-        if tile_results[f'Tile {tile_num}']:
-            matches = bf.match(descriptors_1, descriptors_2)
-            matches = sorted(matches, key=lambda x: x.distance)
-
-            # Visualiser de bedste 10 matches
-            match_img = cv2.drawMatches(crown_img, keypoints_1, tile_img, keypoints_2, matches[:10], None, flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
-            
-            plt.figure(figsize=(10, 7))
-            plt.imshow(match_img)
-            plt.title(f'Matches for Tile {tile_num}')
-            plt.show()
-
-        tile_num += 1
-
-# Print resultatet af hver tile
-for tile, has_crown in tile_results.items():
-    if has_crown:
-        print(f'{tile} indeholder en kongekrone.')
-    else:
-        print(f'{tile} indeholder ikke en kongekrone.')
+# Print the number of good matches
+print(f"Number of good matches: {len(good_matches)}")
