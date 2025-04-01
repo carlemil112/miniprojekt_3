@@ -3,7 +3,7 @@ import numpy as np
 
 crown_img = cv2.imread(r'Reference Tiles\reference_crown.jpg', cv2.IMREAD_GRAYSCALE)
 
-tile_img = cv2.imread(r'Reference Tiles\reference_vand3.jpg', cv2.IMREAD_GRAYSCALE)
+tile_img = cv2.imread(r'Reference Tiles\reference_mine2.jpg', cv2.IMREAD_GRAYSCALE)
 
 
 sift = cv2.SIFT_create()
