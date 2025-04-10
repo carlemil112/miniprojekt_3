@@ -2,114 +2,116 @@ import cv2
 import numpy as np
 import glob
 
-# Indlæs reference billeder for forskellige rotationer
-template_0 = cv2.imread(r'Reference_tiles\reference_crown_small1.jpg')
-template_0_black_bg = cv2.imread(r'Reference_tiles\reference_crown2.jpg')
+import cv2
+import numpy as np
+import glob
 
-# Opret rotationer af referencer
-template_90 = cv2.rotate(template_0, cv2.ROTATE_90_CLOCKWISE)
-template_180 = cv2.rotate(template_0, cv2.ROTATE_180)
-template_270 = cv2.rotate(template_0, cv2.ROTATE_90_COUNTERCLOCKWISE)
+class CrownDetector:
+    def __init__(self, template_paths, threshold=0.5, min_scale=0.95, max_scale=1.05, scale_steps=3):
+        self.threshold = threshold
+        self.min_scale = min_scale
+        self.max_scale = max_scale
+        self.scale_steps = scale_steps
+        self.templates = self.load_and_prepare_templates(template_paths)
 
-template_0_black_bg_90 = cv2.rotate(template_0_black_bg, cv2.ROTATE_90_CLOCKWISE)
-template_0_black_bg_180 = cv2.rotate(template_0_black_bg, cv2.ROTATE_180)
-template_0_black_bg_270 = cv2.rotate(template_0_black_bg, cv2.ROTATE_90_COUNTERCLOCKWISE)
+        # Gem original template højde og bredde for skalering
+        self.h, self.w = self.templates[0].shape[:2]
 
-# Konverter alle reference billeder til HSV
-templates = [
-    cv2.cvtColor(template_0, cv2.COLOR_BGR2HSV),
-    cv2.cvtColor(template_90, cv2.COLOR_BGR2HSV),
-    cv2.cvtColor(template_180, cv2.COLOR_BGR2HSV),
-    cv2.cvtColor(template_270, cv2.COLOR_BGR2HSV),
-    cv2.cvtColor(template_0_black_bg, cv2.COLOR_BGR2HSV),
-    cv2.cvtColor(template_0_black_bg_90, cv2.COLOR_BGR2HSV),
-    cv2.cvtColor(template_0_black_bg_180, cv2.COLOR_BGR2HSV),
-    cv2.cvtColor(template_0_black_bg_270, cv2.COLOR_BGR2HSV)
-]
+    def load_and_prepare_templates(self, template_paths):
+        templates = []
+        for path in template_paths:
+            base_template = cv2.imread(path)
+            if base_template is None:
+                raise FileNotFoundError(f"Template not found: {path}")
+            # Opret rotationer
+            rotations = [
+                base_template,
+                cv2.rotate(base_template, cv2.ROTATE_90_CLOCKWISE),
+                cv2.rotate(base_template, cv2.ROTATE_180),
+                cv2.rotate(base_template, cv2.ROTATE_90_COUNTERCLOCKWISE)
+            ]
+            for rot in rotations:
+                templates.append(cv2.cvtColor(rot, cv2.COLOR_BGR2HSV))
+        return templates
 
-h, w = templates[0].shape[:2]
+    def non_max_suppression(self, boxes, overlapThresh=0.3):
+        if len(boxes) == 0:
+            return []
+        boxes = np.array(boxes)
+        pick = []
+        x1 = boxes[:, 0]
+        y1 = boxes[:, 1]
+        x2 = boxes[:, 2]
+        y2 = boxes[:, 3]
+        area = (x2 - x1 + 1) * (y2 - y1 + 1)
+        idxs = np.argsort(y2)
+        while len(idxs) > 0:
+            last = len(idxs) - 1
+            i = idxs[last]
+            pick.append(i)
+            xx1 = np.maximum(x1[i], x1[idxs[:last]])
+            yy1 = np.maximum(y1[i], y1[idxs[:last]])
+            xx2 = np.minimum(x2[i], x2[idxs[:last]])
+            yy2 = np.minimum(y2[i], y2[idxs[:last]])
+            w = np.maximum(0, xx2 - xx1 + 1)
+            h = np.maximum(0, yy2 - yy1 + 1)
+            overlap = (w * h) / area[idxs[:last]]
+            idxs = np.delete(idxs, np.concatenate(([last], np.where(overlap > overlapThresh)[0])))
+        return boxes[pick]
 
-# Optimerede parametre
-threshold = 0.5
-min_scale = 0.95
-max_scale = 1.05
-scale_steps = 3
+    def detect_crowns(self, tile):
+        detected_boxes = []
+        for scale in np.linspace(self.min_scale, self.max_scale, self.scale_steps):
+            for template in self.templates:
+                resized = cv2.resize(template, (int(self.w * scale), int(self.h * scale)))
+                result = cv2.matchTemplate(tile, resized, cv2.TM_CCOEFF_NORMED)
+                _, max_val, _, max_loc = cv2.minMaxLoc(result)
+                if max_val > self.threshold:
+                    detected_boxes.append((
+                        max_loc[0], max_loc[1],
+                        max_loc[0] + resized.shape[1],
+                        max_loc[1] + resized.shape[0]
+                    ))
+        return self.non_max_suppression(detected_boxes)
 
-# Non-maximum suppression til at fjerne overlap
-def non_max_suppression(boxes, overlapThresh=0.3):
-    if len(boxes) == 0:
-        return []
-    boxes = np.array(boxes)
-    pick = []
-    x1 = boxes[:, 0]
-    y1 = boxes[:, 1]
-    x2 = boxes[:, 2]
-    y2 = boxes[:, 3]
-    area = (x2 - x1 + 1) * (y2 - y1 + 1)
-    idxs = np.argsort(y2)
-    while len(idxs) > 0:
-        last = len(idxs) - 1
-        i = idxs[last]
-        pick.append(i)
-        xx1 = np.maximum(x1[i], x1[idxs[:last]])
-        yy1 = np.maximum(y1[i], y1[idxs[:last]])
-        xx2 = np.minimum(x2[i], x2[idxs[:last]])
-        yy2 = np.minimum(y2[i], y2[idxs[:last]])
-        w = np.maximum(0, xx2 - xx1 + 1)
-        h = np.maximum(0, yy2 - yy1 + 1)
-        overlap = (w * h) / area[idxs[:last]]
-        idxs = np.delete(idxs, np.concatenate(([last], np.where(overlap > overlapThresh)[0])))
-    return boxes[pick]
+    def process_board_image(self, image_path):
+        board_img = cv2.imread(image_path)
+        board_hsv = cv2.cvtColor(board_img, cv2.COLOR_BGR2HSV)
+        tile_height = board_img.shape[0] // 5
+        tile_width = board_img.shape[1] // 5
 
-# Funktion til at detektere kroner på en tile med flere templates
-def detect_crowns(tile):
-    detected_boxes = []
-    blurred_tile = cv2.GaussianBlur(tile, (5, 5), 0)
-    for scale in np.linspace(min_scale, max_scale, scale_steps):
-        for template in templates:
-            resized = cv2.resize(template, (int(w * scale), int(h * scale)))
-            resized_h, resized_w = resized.shape[:2]
-            result = cv2.matchTemplate(tile, resized, cv2.TM_CCOEFF_NORMED)
-            _, max_val, _, max_loc = cv2.minMaxLoc(result)
-            if max_val > threshold:
-                detected_boxes.append((max_loc[0], max_loc[1],
-                                       max_loc[0] + resized_w, max_loc[1] + resized_h))
-    return non_max_suppression(detected_boxes)
+        for i in range(5):
+            for j in range(5):
+                y1, y2 = i * tile_height, (i + 1) * tile_height
+                x1, x2 = j * tile_width, (j + 1) * tile_width
+                tile = board_hsv[y1:y2, x1:x2]
+                crowns = self.detect_crowns(tile)
 
-# Iterer over de sidste 10 billeder i mappen
-image_paths = glob.glob(r'Cropped and perspective corrected boards\*.jpg')[-10:]
+                if len(crowns) > 0:
+                    cv2.rectangle(board_img, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                    for (bx1, by1, bx2, by2) in crowns:
+                        cv2.rectangle(board_img,
+                                      (x1 + bx1, y1 + by1),
+                                      (x1 + bx2, y1 + by2),
+                                      (0, 0, 255), 2)
 
-for image_path in image_paths:
-    # Indlæs og konverter til HSV
-    board_img = cv2.imread(image_path)
-    board_hsv = cv2.cvtColor(board_img, cv2.COLOR_BGR2HSV)
+        return board_img
 
-    # Split board i tiles
-    tile_height = board_img.shape[0] // 5
-    tile_width = board_img.shape[1] // 5
+# Brug
+if __name__ == "__main__":
+    # Angiv paths til dine templates
+    template_paths = [
+        r"Reference_tiles\reference_crown_small1.jpg",
+        r"Reference_tiles\reference_crown2.jpg"
+    ]
+    
+    detector = CrownDetector(template_paths)
 
-    for i in range(5):
-        for j in range(5):
-            y1 = i * tile_height
-            y2 = y1 + tile_height
-            x1 = j * tile_width
-            x2 = x1 + tile_width
+    image_paths = glob.glob(r"Cropped and perspective corrected boards\*.jpg")[-10:]
 
-            tile = board_hsv[y1:y2, x1:x2]
+    for path in image_paths:
+        result_img = detector.process_board_image(path)
+        cv2.imshow(f"Result for {path}", result_img)
+        cv2.waitKey(0)
 
-            # Detekter kroner med den nye metode
-            crowns = detect_crowns(tile)
-
-            if len(crowns) > 0:
-                cv2.rectangle(board_img, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                for (bx1, by1, bx2, by2) in crowns:
-                    cv2.rectangle(board_img,
-                                  (x1 + bx1, y1 + by1),
-                                  (x1 + bx2, y1 + by2),
-                                  (0, 0, 255), 2)
-
-    # Vis resultatet for hvert billede
-    cv2.imshow(f'Result for {image_path}', board_img)
-    cv2.waitKey(0)
-
-cv2.destroyAllWindows()
+    cv2.destroyAllWindows()
