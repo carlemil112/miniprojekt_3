@@ -1,13 +1,9 @@
 import cv2 as cv
 import numpy as np
-import matplotlib.pyplot as plt
 import os
 import pandas as pd
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.model_selection import train_test_split
-from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 
-#Load images from directory.
+# Load images from directory
 def load_images(image_path):
     image_files = sorted(os.listdir(image_path), key=lambda f: int(os.path.splitext(f)[0]))
     images = []
@@ -16,19 +12,20 @@ def load_images(image_path):
         if img is not None:
             images.append(img)
         else:
-            print(f"⚠️ Skipped loading {f}")
+            print(f"Skipped loading {f}")
     return images
 
-#Split image into 5x5 grid of 100x100px tiles.
+# Split image into 5x5 grid of 100x100px tiles
 def get_tiles(image):
     tiles = []
     for y in range(5):  # rows
-        tiles.append([])
+        row = []
         for x in range(5):  # columns
-            tiles[-1].append(image[y*100:(y+1)*100, x*100:(x+1)*100])
+            row.append(image[y*100:(y+1)*100, x*100:(x+1)*100])
+        tiles.append(row)
     return tiles
 
-#Get normalized hue histogram from a tile.
+# Get normalized hue histogram from a tile
 def get_histogram(tile, bins):
     hsv = cv.cvtColor(tile, cv.COLOR_BGR2HSV)
     hue = hsv[:, :, 0]
@@ -36,66 +33,72 @@ def get_histogram(tile, bins):
     hist = cv.normalize(hist, hist).flatten()
     return hist
 
+# Extract texture features using Sobel filter
+def get_texture_features(tile):
+    # Convert to grayscale for texture analysis
+    gray = cv.cvtColor(tile, cv.COLOR_BGR2GRAY)
+    
+    # Apply Sobel filter in x and y directions
+    sobel_x = cv.Sobel(gray, cv.CV_64F, 1, 0, ksize=3)
+    sobel_y = cv.Sobel(gray, cv.CV_64F, 0, 1, ksize=3)
+    
+    # Calculate magnitude
+    magnitude = np.sqrt(sobel_x**2 + sobel_y**2)
+    
+    # Normalize the magnitude
+    if np.max(magnitude) > 0:
+        magnitude = magnitude / np.max(magnitude)
+    
+    # Calculate statistics as texture features
+    features = [
+        np.mean(magnitude),           # Mean gradient strength
+        np.std(magnitude),            # Standard deviation
+        np.percentile(magnitude, 75), # 75th percentile
+        np.percentile(magnitude, 90), # 90th percentile
+        np.max(magnitude),            # Maximum gradient
+        np.sum(magnitude > 0.25),     # Count of strong edges
+    ]
+    
+    return features
 
-def x_images(images):
-    print(f"Loaded {len(images)} images.")
-
-
-def x_histograms(all_histograms):
-    print(f"Total histograms generated: {len(all_histograms)}")
-
-#Load CSV labels into a dictionary.
+# Load CSV labels into a dictionary
 def load_labels(csv_path):
     df = pd.read_csv(csv_path)
     df['key'] = list(zip(df['Image'], df['row'], df['column']))
     label_map = dict(zip(df['key'], df['TrueLabel']))
     return label_map
 
-#Generate histograms and match with labels.
-def collect_hist_and_label(images, bins, label_map):
-    histograms = []
+# Generate histograms, texture features and match with labels
+def collect_features_and_label(images, bins, label_map):
+    color_histograms = []
+    texture_features = []
     labels = []
-
-    label_grid = np.empty((len(images), 5, 5), dtype=object)  # Store tile labels per image
-
+    
     for img_index, img in enumerate(images, start=1):  # Start at 1 to match CSV
         tiles = get_tiles(img)
 
         for row_idx, row in enumerate(tiles):
             for col_idx, tile in enumerate(row):
+                # Get color features
                 hist = get_histogram(tile, bins=bins)
-                histograms.append(hist)
+                color_histograms.append(hist)
+                
+                # Get texture features
+                texture = get_texture_features(tile)
+                texture_features.append(texture)
 
                 key = (img_index, row_idx, col_idx)
                 label = label_map.get(key, "unknown")
                 labels.append(label)
 
-                # Store label in the label grid
-                label_grid[img_index - 1, row_idx, col_idx] = label
+    return color_histograms, texture_features, labels
 
-    return histograms, labels, label_grid
-
-
-def apply_lda(X_train, X_test, y_train, n_components=2):
-    """
-    Applies Linear Discriminant Analysis (LDA) for dimensionality reduction.
-
-    Parameters:
-        X_train (np.ndarray): Training data features.
-        X_test (np.ndarray): Testing data features.
-        y_train (np.ndarray): Training labels (required for LDA).
-        n_components (int): Number of components to reduce to (max C-1).
-
-    Returns:
-        X_train_lda (np.ndarray): LDA-transformed training data.
-        X_test_lda (np.ndarray): LDA-transformed test data.
-        lda (LinearDiscriminantAnalysis): The fitted LDA model.
-    """
-    lda = LinearDiscriminantAnalysis(n_components=n_components)
-    X_train_lda = lda.fit_transform(X_train, y_train)
-    X_test_lda = lda.transform(X_test)
-    return X_train_lda, X_test_lda, lda
-
+def save_to_csv(X, y, filename):
+    """Saves feature data and labels to a CSV file."""
+    data = pd.DataFrame(X)
+    data['label'] = y
+    data.to_csv(filename, index=False)
+    print(f"Data saved to {filename}")
 
 # Main entry point
 def main():
@@ -103,19 +106,49 @@ def main():
     label_path = r"C:\Users\anne\Desktop\Daki\s2\projekter\miniprojekt_3\labels_uden_kroner.csv"
 
     images = load_images(image_path)
-    x_images(images)
+    print(f"Loaded {len(images)} images.")
 
-    bins = 30
+    bins = 32
     label_map = load_labels(label_path)
-    all_histograms, all_labels, label_grid = collect_hist_and_label(images, bins, label_map)
-    x_histograms(all_histograms)
-
+    
+    # Collect both color and texture features
+    color_histograms, texture_features, all_labels = collect_features_and_label(images, bins, label_map)
+    
+    print(f"Total features generated: {len(color_histograms)}")
     print(f"Total labels collected: {len(all_labels)}")
-
-    # Train/test split
-    X_train, X_test, y_train, y_test = train_test_split(all_histograms, all_labels, test_size=0.2, random_state=42)
-
-    X_train_lda, X_test_lda, lda_model = apply_lda(X_train, X_test, y_train, n_components=6)
+    
+    # Combine color and texture features
+    combined_features = []
+    for i in range(len(color_histograms)):
+        combined = np.concatenate([color_histograms[i], texture_features[i]])
+        combined_features.append(combined)
+    
+    print(f"Combined feature length: {len(combined_features[0])}")
+    
+    # Train/validation/test split: 60%/20%/20%
+    from sklearn.model_selection import train_test_split
+    
+    X_train_val, X_test, y_train_val, y_test = train_test_split(
+        combined_features, all_labels, test_size=0.2, random_state=42
+    )
+    
+    # Split training data into train and validation
+    X_train, X_val, y_train, y_val = train_test_split(
+        X_train_val, y_train_val, test_size=0.25, random_state=42
+    )  # 0.25 of 80% is 20% of the original
+    
+    print(f"Train set: {len(X_train)} samples")
+    print(f"Validation set: {len(X_val)} samples")
+    print(f"Test set: {len(X_test)} samples")
+    
+    # Save features and split datasets
+    save_to_csv(combined_features, all_labels, 'combined_features_with_labels.csv')
+    save_to_csv(color_histograms, all_labels, 'color_histograms_with_labels.csv')
+    save_to_csv(texture_features, all_labels, 'texture_features_with_labels.csv')
+    
+    save_to_csv(X_train, y_train, 'X_train.csv')
+    save_to_csv(X_val, y_val, 'X_val.csv')
+    save_to_csv(X_test, y_test, 'X_test.csv')
 
 if __name__ == "__main__":
     main()
