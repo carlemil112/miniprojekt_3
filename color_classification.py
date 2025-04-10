@@ -2,6 +2,9 @@ import cv2 as cv
 import numpy as np
 import os
 import pandas as pd
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 
 # Load images from directory
 def load_images(image_path):
@@ -100,7 +103,28 @@ def save_to_csv(X, y, filename):
     data.to_csv(filename, index=False)
     print(f"Data saved to {filename}")
 
-# Main entry point
+def lda(X_train, X_val, X_test, y_train):
+    lda = LinearDiscriminantAnalysis(n_components=6)
+    lda.fit(X_train, y_train)
+
+    X_train_lda = lda.transform(X_train)
+    X_val_lda = lda.transform(X_val)
+    X_test_lda = lda.transform(X_test)
+
+    return lda, X_train_lda, X_val_lda, X_test_lda
+
+def knn(X_train_lda, X_val_lda, X_test_lda, y_train, y_val, y_test, n_neighbors=5):
+    knn = KNeighborsClassifier(n_neighbors=n_neighbors)
+    knn.fit(X_train_lda, y_train)
+    
+    y_val_pred = knn.predict(X_val_lda)
+
+    print("Validation Accuracy:", accuracy_score(y_val, y_val_pred))
+    print("Validation Classification Report:\n", classification_report(y_val, y_val_pred))
+    print("Validation Confusion Matrix:\n", confusion_matrix(y_val, y_val_pred))
+
+    return knn
+
 def main():
     image_path = r"C:\Users\anne\Desktop\Daki\s2\projekter\miniprojekt_3\miniprojekt_3\Cropped and perspective corrected boards"
     label_path = r"C:\Users\anne\Desktop\Daki\s2\projekter\miniprojekt_3\labels_uden_kroner.csv"
@@ -141,6 +165,8 @@ def main():
     print(f"Validation set: {len(X_val)} samples")
     print(f"Test set: {len(X_test)} samples")
     
+    lda_model, X_train_lda, X_val_lda, X_test_lda = lda(X_train, X_val, X_test, y_train)
+
     # Save features and split datasets
     save_to_csv(combined_features, all_labels, 'combined_features_with_labels.csv')
     save_to_csv(color_histograms, all_labels, 'color_histograms_with_labels.csv')
@@ -150,9 +176,8 @@ def main():
     save_to_csv(X_val, y_val, 'X_val.csv')
     save_to_csv(X_test, y_test, 'X_test.csv')
 
+    knn_model = knn(X_train_lda, X_val_lda, X_test_lda, y_train, y_val, y_test, n_neighbors=5)
+
 if __name__ == "__main__":
     main()
 
-
-
-#knn klassifisering med median. Kig på kanter. Til krone: Temple matching, hawk og sift. 
