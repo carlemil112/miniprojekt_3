@@ -1,7 +1,7 @@
 import color_classification as cc
 
 def main():
-    image_path = r"miniprojekt_3\Cropped and perspective corrected boards"
+    image_path = r"Cropped and perspective corrected boards"
     label_path = r"labels_uden_kroner.csv"
 
     classifier = cc.Tile_Classifier()
@@ -10,3 +10,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
