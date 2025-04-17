@@ -62,9 +62,9 @@ def calculate_rgb_median(tile):
     return (median_r, median_g, median_b)
 
 # Eksempel reference tiles (du kan læse dem fra billeder eller arrays)
-reference_tiles_forest = [cv2.imread(r'C:\Users\carle\Desktop\python_work\Miniprojekt_3\Reference Tiles\reference_skov.jpg')]  # Tilføj alle forest-tiles her
-reference_tiles_plain = [cv2.imread(r'C:\Users\carle\Desktop\python_work\Miniprojekt_3\Reference Tiles\reference_eng.jpg')]   # Tilføj alle plain-tiles her
-reference_tiles_water = [cv2.imread(r'C:\Users\carle\Desktop\python_work\Miniprojekt_3\Reference Tiles\reference_vand.jpg')] # Tilføj alle water-tiles her
+reference_tiles_forest = [cv2.imread(r'C:\Users\carle\Desktop\python_work\Miniprojekt_3\Reference_tiles\reference_skov.jpg')]  # Tilføj alle forest-tiles her
+reference_tiles_plain = [cv2.imread(r'C:\Users\carle\Desktop\python_work\Miniprojekt_3\Reference_tiles\reference_eng.jpg')]   # Tilføj alle plain-tiles her
+reference_tiles_water = [cv2.imread(r'C:\Users\carle\Desktop\python_work\Miniprojekt_3\Reference_tiles\reference_vand.jpg')] # Tilføj alle water-tiles her
 
 # Kategorisering af reference tiles
 reference_tiles = {

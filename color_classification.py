@@ -171,7 +171,7 @@ class Tile_Classifier:
         print(f"Test set: {len(X_test)} samples")
         
         self.lda_model, X_train_lda, X_val_lda, X_test_lda = self.lda(X_train, X_val, X_test, y_train)
-        self.knn(X_train_lda, X_val_lda, X_test_lda, y_train, y_val, y_test, n_neighbors=5)
+        self.knn_model = self.knn(X_train_lda, X_val_lda, X_test_lda, y_train, y_val, y_test, n_neighbors=5)
 
         # Save features and split datasets
         #classifier.save_to_csv(combined_features, all_labels, 'combined_features_with_labels.csv')
