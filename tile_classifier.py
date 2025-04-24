@@ -117,12 +117,12 @@ class Tile_Classifier:
         return X_train, X_val, X_test, y_train, y_val, y_test
 
     #slet senere
-    def save_to_csv(self, X, y, filename):
+    #def save_to_csv(self, X, y, filename):
         """Saves feature data and labels to a CSV file."""
-        data = pd.DataFrame(X)
-        data['label'] = y
-        data.to_csv(filename, index=False)
-        print(f"Data saved to {filename}")
+        #data = pd.DataFrame(X)
+        #data['label'] = y
+        #data.to_csv(filename, index=False)
+        #print(f"Data saved to {filename}")
 
     def lda(self, X_train, X_val, X_test, y_train):
         lda = LinearDiscriminantAnalysis(n_components=6)
