@@ -103,11 +103,6 @@ def visualize_scores(image, regions):
 
 
 
-
-
-
-
-
 def run_score_comparison_test(image_path, classifier, crown_detector):
     total = len(point_1_74)
     correct = 0
@@ -149,7 +144,6 @@ def main():
 
     classifier.test_on_csv(r"C:\Users\anne\Desktop\Daki\s2\projekter\miniprojekt_3\miniprojekt_3\X_test.csv")
 
-    classifier.test_on_csv(r"C:\Users\anne\Desktop\Daki\s2\projekter\miniprojekt_3\miniprojekt_3\X_test.csv")
 
     img_path = os.path.join(image_path, "1.jpg")
     img = cv2.imread(img_path)
