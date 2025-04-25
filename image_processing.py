@@ -3,7 +3,7 @@ import glob
 import os
 import numpy as np
 
-images = r"C:\Users\anne\Desktop\Daki\s2\projekter\miniprojekt_3\miniprojekt_3\Cropped and perspective corrected boards"
+images = r"Cropped and perspective corrected boards"
 
 # Retrieve a list of image file paths with .jpg extension
 image_files = glob.glob(os.path.join(images, "*.jpg"))

@@ -212,15 +212,5 @@ class Tile_Classifier:
         plt.show()
         
 
-        #Save features and split datasets
-        #classifier.save_to_csv(combined_features, all_labels, 'combined_features_with_labels.csv')
-        #classifier.save_to_csv(color_histograms, all_labels, 'color_histograms_with_labels.csv')
-        #classifier.save_to_csv(texture_features, all_labels, 'texture_features_with_labels.csv')
-        
-        #classifier.save_to_csv(X_train, y_train, 'X_train.csv')
-        #classifier.save_to_csv(X_val, y_val, 'X_val.csv')
-        #classifier.save_to_csv(X_test, y_test, 'X_test.csv')
-
-
 
 

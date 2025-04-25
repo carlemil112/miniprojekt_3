@@ -228,26 +228,18 @@ def run_score_comparison_test(image_path, classifier, crown_detector):
     print(f"Average Score Error: {avg_error:.2f}")
 
 
-# Confusion matrix for the classification of the tiles
-
-def visualize_confusion_matrix(y_true, y_pred, classes):
-    cm = confusion_matrix(y_true, y_pred, labels=classes)
-    disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=classes)
-    disp.plot(cmap=plt.cm.Blues)
-    plt.title("Confusion Matrix")
-    plt.show()
 
 
 
 def main():
-    image_path = r"miniprojekt_3\Cropped and perspective corrected boards"
-    label_path = r"miniprojekt_3\labels_uden_kroner.csv"
-    label_file = r"C:\Users\anne\Desktop\Daki\s2\projekter\miniprojekt_3\miniprojekt_3\ground_truth.csv"
+    image_path = r"Cropped and perspective corrected boards"
+    label_path = r"labels_uden_kroner.csv"
+    label_file = r"ground_truth.csv"
 
     classifier = Tile_Classifier()
     classifier.run_pipeline(image_path, label_path)
 
-    classifier.test_on_csv(r"C:\Users\anne\Desktop\Daki\s2\projekter\miniprojekt_3\miniprojekt_3\X_test.csv")
+    classifier.test_on_csv(r"X_test.csv")
 
 
     img_path = os.path.join(image_path, "1.jpg")
@@ -256,10 +248,10 @@ def main():
         raise FileNotFoundError(f"Image not found: {img_path}")
 
     crown_templates = [
-        r"C:\Users\anne\Desktop\Daki\s2\projekter\miniprojekt_3\miniprojekt_3\Reference_tiles\reference_crown_small1_rot90.JPG",
-        r"C:\Users\anne\Desktop\Daki\s2\projekter\miniprojekt_3\miniprojekt_3\Reference_tiles\reference_crown_small1_rot180.JPG",
-        r"C:\Users\anne\Desktop\Daki\s2\projekter\miniprojekt_3\miniprojekt_3\Reference_tiles\reference_crown_small1_rot270.JPG",
-        r"C:\Users\anne\Desktop\Daki\s2\projekter\miniprojekt_3\miniprojekt_3\Reference_tiles\reference_crown_small1.jpg"
+        r"Reference_tiles\reference_crown_small1_rot90.JPG",
+        r"Reference_tiles\reference_crown_small1_rot180.JPG",
+        r"Reference_tiles\reference_crown_small1_rot270.JPG",
+        r"Reference_tiles\reference_crown_small1.jpg"
     ]
     crown_detector = CrownDetector(crown_templates)
 
@@ -285,12 +277,11 @@ def main():
 
 
 
-    #visualize_scores(img, all_regions)
-    #visualize_classification(img, tile_grid, crown_grid, all_regions)
-    #run_score_comparison_test(image_path, classifier, crown_detector)   
-    #visualize_confusion_matrix(classifier.y_true, classifier.y_pred, classifier.classes)
-    run_crown_detection_accuracy_test(image_path, classifier, crown_detector, 'miniprojekt_3\ground_truth.csv')
-
+    visualize_scores(img, all_regions)
+    visualize_classification(img, tile_grid, crown_grid, all_regions)
+    run_score_comparison_test(image_path, classifier, crown_detector)   
+    run_crown_detection_accuracy_test(image_path, classifier, crown_detector, 'ground_truth.csv')
+    
 
 if __name__ == "__main__":
     main()
