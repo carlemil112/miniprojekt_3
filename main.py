@@ -2,6 +2,13 @@ import cv2
 import numpy as np
 import random
 import os
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+import matplotlib.pyplot as plt
+import pandas as pd
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import precision_score, recall_score, f1_score
+import numpy as np
+
 
 from tile_classifier import Tile_Classifier
 from crown_detection import CrownDetector
@@ -103,6 +110,67 @@ def visualize_scores(image, regions):
 
 
 
+
+# Function to load the true crown labels from the CSV file
+def load_true_crown_labels_from_csv(label_file):
+    # Load the CSV file
+    df = pd.read_csv(label_file)
+    
+    # We want to extract the 'image_id', 'x', 'y', and 'crowns' columns
+    crowns_data = df[['image_id', 'x', 'y', 'crowns']]
+    
+    # Create a dictionary to store the labels
+    labels = {}
+    
+    # Iterate through each row in the data
+    for _, row in crowns_data.iterrows():
+        image_id = row['image_id']
+        x, y, crowns = row['x'], row['y'], row['crowns']
+        
+        # If image_id is not already in the dictionary, add it
+        if image_id not in labels:
+            labels[image_id] = []
+        
+        # Append the (x, y, crowns) information to the list for the corresponding image_id
+        labels[image_id].append((x, y, crowns))
+    
+    return labels
+
+def run_crown_detection_accuracy_test(image_path, classifier, crown_detector, label_file):
+    # Load true crown labels from the CSV file
+    true_crowns = load_true_crown_labels_from_csv(label_file)
+
+    
+    
+
+def evaluate_crown_detection(true_crowns, predicted_crowns):
+
+    all_true = []
+    all_predicted = []
+
+    # Iterate over each image and compare true crowns to predicted ones
+    for image_id in true_crowns:
+        true_data = true_crowns[image_id]
+        predicted_data = predicted_crowns.get(image_id, [])
+
+        # Map the crowns to the list (we assume both true and predicted data are aligned)
+        for (x, y, true_crowns_count), (_, _, predicted_crowns_count) in zip(true_data, predicted_data):
+            all_true.append(true_crowns_count)
+            all_predicted.append(predicted_crowns_count)
+
+    # Compute precision, recall, and F1 score
+    precision = precision_score(all_true, all_predicted, average='macro', zero_division=0)
+    recall = recall_score(all_true, all_predicted, average='macro', zero_division=0)
+    f1 = f1_score(all_true, all_predicted, average='macro', zero_division=0)
+
+    return precision, recall, f1
+
+
+
+
+
+
+
 def run_score_comparison_test(image_path, classifier, crown_detector):
     total = len(point_1_74)
     correct = 0
@@ -133,6 +201,24 @@ def run_score_comparison_test(image_path, classifier, crown_detector):
 
     print(f"\nScore Accuracy: {accuracy:.2f}%")
     print(f"Average Score Error: {avg_error:.2f}")
+
+
+# Confusion matrix for the classification of the tiles
+
+def visualize_confusion_matrix(y_true, y_pred, classes):
+    cm = confusion_matrix(y_true, y_pred, labels=classes)
+    disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=classes)
+    disp.plot(cmap=plt.cm.Blues)
+    plt.title("Confusion Matrix")
+    plt.show()
+
+
+
+
+
+
+
+
 
 
 def main():
@@ -178,10 +264,13 @@ def main():
         print(f"Tiles: {region['tiles']}")
         print(f"Score: {region['score']}\n")
 
-    visualize_scores(img, all_regions)
-    visualize_classification(img, tile_grid, crown_grid, all_regions)
-    run_score_comparison_test(image_path, classifier, crown_detector)
-   
+
+
+    #visualize_scores(img, all_regions)
+    #visualize_classification(img, tile_grid, crown_grid, all_regions)
+    #run_score_comparison_test(image_path, classifier, crown_detector)   
+    #visualize_confusion_matrix(classifier.y_true, classifier.y_pred, classifier.classes)
+    run_crown_detection_accuracy_test(image_path, classifier, crown_detector, 'ground_truth.csv')
 
 
 if __name__ == "__main__":

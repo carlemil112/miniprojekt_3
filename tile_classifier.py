@@ -19,6 +19,9 @@ class Tile_Classifier:
         self.combined_features = None
         self.lda_model = None
         self.knn_model = None
+        self.y_true = None
+        self.y_pred = None
+        self.classes = None
 
     # Load images from directory
     def load_images(self, image_path):
@@ -127,7 +130,7 @@ class Tile_Classifier:
         #print(f"Data saved to {filename}")
 
     def lda(self, X_train, X_val, X_test, y_train):
-        lda = LinearDiscriminantAnalysis(n_components=6)
+        lda = LinearDiscriminantAnalysis(n_components=7)
         lda.fit(X_train, y_train)
 
         X_train_lda = lda.transform(X_train)
@@ -174,6 +177,10 @@ class Tile_Classifier:
         
         self.lda_model, X_train_lda, X_val_lda, X_test_lda = self.lda(X_train, X_val, X_test, y_train)
         self.knn_model = self.knn(X_train_lda, X_val_lda, X_test_lda, y_train, y_val, y_test, n_neighbors=5)
+
+        self.y_pred = self.knn_model.predict(X_test_lda)
+        self.y_true = y_test
+        self.classes = sorted(list(set(all_labels)))
 
 
     def test_on_csv(self, test_csv_path, label_column='label'):

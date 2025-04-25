@@ -104,7 +104,7 @@ if __name__ == "__main__":
     
     detector = CrownDetector(template_paths)
 
-    image_paths = glob.glob(r"Cropped and perspective corrected boards\*.jpg")[:3]
+    image_paths = glob.glob(r"Cropped and perspective corrected boards\*.jpg")[:1]
 
     for path in image_paths:
         result_img = detector.process_board_image(path)
