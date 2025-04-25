@@ -9,11 +9,10 @@ from sklearn.metrics import accuracy_score
 from sklearn.metrics import precision_score, recall_score, f1_score
 import numpy as np
 
-
 from tile_classifier import Tile_Classifier
 from crown_detection import CrownDetector
 from neighbour_detection import NeighbourDetection
-from score_calculation import point_1_74  # Sørg for at filen eksisterer og importen er korrekt
+from score_calculation import point_1_74  
 
 
 def classify_image_to_grid(tc, crown_detector, image, bins=32):
@@ -137,8 +136,37 @@ def load_true_crown_labels_from_csv(label_file):
     return labels
 
 def run_crown_detection_accuracy_test(image_path, classifier, crown_detector, label_file):
-    # Load true crown labels from the CSV file
     true_crowns = load_true_crown_labels_from_csv(label_file)
+    predicted_crowns = {}
+
+    for image_file in os.listdir(image_path):
+        if not image_file.endswith(".jpg"):
+            continue
+
+        image_id = int(os.path.splitext(image_file)[0])
+        img = cv2.imread(os.path.join(image_path, image_file))
+
+        if img is None:
+            print(f"Image {image_file} not found or unreadable.")
+            continue
+
+        tiles = classifier.get_tiles(img)
+        predicted_crowns[image_id] = []
+
+        for i in range(5):
+            for j in range(5):
+                tile = tiles[i][j]
+                hsv_tile = cv2.cvtColor(tile, cv2.COLOR_BGR2HSV)
+                crown_count = len(crown_detector.detect_crowns(hsv_tile))
+                predicted_crowns[image_id].append((i, j, crown_count))
+
+    precision, recall, f1, accuracy_score = evaluate_crown_detection(true_crowns, predicted_crowns)
+
+    print(f"\nCrown Detection Results:")
+    print(f"Accuracy: {accuracy_score:.2f}")
+    print(f"Precision: {precision:.2f}")
+    print(f"Recall:    {recall:.2f}")
+    print(f"F1 Score:  {f1:.2f}")
 
     
     
@@ -162,12 +190,9 @@ def evaluate_crown_detection(true_crowns, predicted_crowns):
     precision = precision_score(all_true, all_predicted, average='macro', zero_division=0)
     recall = recall_score(all_true, all_predicted, average='macro', zero_division=0)
     f1 = f1_score(all_true, all_predicted, average='macro', zero_division=0)
+    accuracy = accuracy_score(all_true, all_predicted)
 
-    return precision, recall, f1
-
-
-
-
+    return precision, recall, f1, accuracy
 
 
 
@@ -214,16 +239,10 @@ def visualize_confusion_matrix(y_true, y_pred, classes):
 
 
 
-
-
-
-
-
-
-
 def main():
     image_path = r"miniprojekt_3\Cropped and perspective corrected boards"
     label_path = r"miniprojekt_3\labels_uden_kroner.csv"
+    label_file = r"C:\Users\anne\Desktop\Daki\s2\projekter\miniprojekt_3\miniprojekt_3\ground_truth.csv"
 
     classifier = Tile_Classifier()
     classifier.run_pipeline(image_path, label_path)
@@ -237,10 +256,10 @@ def main():
         raise FileNotFoundError(f"Image not found: {img_path}")
 
     crown_templates = [
-        r"Reference_tiles\reference_crown_small1.jpg",
-        r"Reference_tiles\reference_crown2.jpg",
-        r"Reference_tiles\reference_crown.jpg",
-        r"Reference_tiles\reference_crown3.jpg"
+        r"C:\Users\anne\Desktop\Daki\s2\projekter\miniprojekt_3\miniprojekt_3\Reference_tiles\reference_crown_small1_rot90.JPG",
+        r"C:\Users\anne\Desktop\Daki\s2\projekter\miniprojekt_3\miniprojekt_3\Reference_tiles\reference_crown_small1_rot180.JPG",
+        r"C:\Users\anne\Desktop\Daki\s2\projekter\miniprojekt_3\miniprojekt_3\Reference_tiles\reference_crown_small1_rot270.JPG",
+        r"C:\Users\anne\Desktop\Daki\s2\projekter\miniprojekt_3\miniprojekt_3\Reference_tiles\reference_crown_small1.jpg"
     ]
     crown_detector = CrownDetector(crown_templates)
 
@@ -270,7 +289,7 @@ def main():
     #visualize_classification(img, tile_grid, crown_grid, all_regions)
     #run_score_comparison_test(image_path, classifier, crown_detector)   
     #visualize_confusion_matrix(classifier.y_true, classifier.y_pred, classifier.classes)
-    run_crown_detection_accuracy_test(image_path, classifier, crown_detector, 'ground_truth.csv')
+    run_crown_detection_accuracy_test(image_path, classifier, crown_detector, 'miniprojekt_3\ground_truth.csv')
 
 
 if __name__ == "__main__":
