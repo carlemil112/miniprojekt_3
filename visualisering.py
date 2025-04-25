@@ -1,7 +1,7 @@
-import color_classification as cc
-from color_classification import Tile_Classifier
+import tile_classifier as cc
+from tile_classifier import Tile_Classifier
 from neighbour_detection import NeighbourDetection
-from template_matching import CrownDetector
+from crown_detection import CrownDetector
 import cv2 as cv
 import numpy as np
 import matplotlib.pyplot as plt
@@ -61,14 +61,14 @@ pca = PCA(n_components=2)
 features_pca = pca.fit_transform(combined_features)
 
 # Apply LDA to reduce dimensions and improve class separation
-lda = LinearDiscriminantAnalysis(n_components=2)
+lda = LinearDiscriminantAnalysis(n_components=7)
 features_lda = lda.fit_transform(combined_features, labels)
 
 # Plot PCA (before LDA) and LDA result side by side
 fig, axs = plt.subplots(1, 2, figsize=(12, 5))
 
 # Apply LDA to reduce dimensions and improve class separation
-lda = LinearDiscriminantAnalysis(n_components=2)
+lda = LinearDiscriminantAnalysis(n_components=7)
 features_lda = lda.fit_transform(combined_features, labels)
 
 # Encode string labels into integers
@@ -76,7 +76,7 @@ label_encoder = LabelEncoder()
 numeric_labels = label_encoder.fit_transform(labels)
 
 # Apply LDA using numeric labels
-lda = LinearDiscriminantAnalysis(n_components=2)
+lda = LinearDiscriminantAnalysis(n_components=7)
 features_lda = lda.fit_transform(combined_features, numeric_labels)
 
 
@@ -97,4 +97,32 @@ handles, _ = scatter.legend_elements()
 class_labels = label_encoder.classes_
 axs[1].legend(handles, class_labels, title="Terrain Types", bbox_to_anchor=(1.05, 1), loc='upper left')
 plt.tight_layout()
+plt.show()
+
+
+
+# Paths to your crown templates (adjust if needed)
+template_paths = [
+    r"miniprojekt_3\Reference_tiles\reference_crown_small1_rot90.JPG",
+    r"miniprojekt_3\Reference_tiles\reference_crown_small1_rot180.JPG"
+]
+
+# Create the crown detector
+detector = CrownDetector(template_paths)
+
+# Pick a board image to analyze
+board_img_path = r"miniprojekt_3\Cropped and perspective corrected boards\1.jpg"  # Adjust if needed
+board_img = cv.imread(board_img_path)
+
+# Detect crowns and draw boxes (already built into process_board_image)
+annotated_img = detector.process_board_image(board_img_path)
+
+# Convert to RGB for matplotlib display
+annotated_rgb = cv.cvtColor(annotated_img, cv.COLOR_BGR2RGB)
+
+# Plot using matplotlib
+plt.figure(figsize=(8, 8))
+plt.imshow(annotated_rgb)
+plt.title("Crown Detection (Green = tile, Red = crown)")
+plt.axis("off")
 plt.show()

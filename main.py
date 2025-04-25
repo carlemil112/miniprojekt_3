@@ -42,12 +42,14 @@ def classify_image_to_grid(tc, crown_detector, image, bins=32):
 
 
 def main():
-    image_path = r"Cropped and perspective corrected boards"
-    label_path = r"labels_uden_kroner.csv"
+    image_path = r"miniprojekt_3\Cropped and perspective corrected boards"
+    label_path = r"miniprojekt_3\labels_uden_kroner.csv"
 
     # Train the classifier
     classifier = Tile_Classifier()
     classifier.run_pipeline(image_path, label_path)
+
+    classifier.test_on_csv(r"C:\Users\anne\Desktop\Daki\s2\projekter\miniprojekt_3\miniprojekt_3\X_test.csv")
 
     # Load a single test image
     img = cv2.imread(r"Cropped and perspective corrected boards\1.jpg")

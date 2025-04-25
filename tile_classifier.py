@@ -2,6 +2,8 @@ import cv2 as cv
 import numpy as np
 import os
 import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
@@ -173,7 +175,37 @@ class Tile_Classifier:
         self.lda_model, X_train_lda, X_val_lda, X_test_lda = self.lda(X_train, X_val, X_test, y_train)
         self.knn_model = self.knn(X_train_lda, X_val_lda, X_test_lda, y_train, y_val, y_test, n_neighbors=5)
 
-        # Save features and split datasets
+
+    def test_on_csv(self, test_csv_path, label_column='label'):
+        # Load test data
+        df = pd.read_csv(test_csv_path)
+        X_test = df.drop(columns=[label_column]).values
+        y_test = df[label_column].values
+
+        # Transform features using trained LDA model
+        X_test_lda = self.lda_model.transform(X_test)
+
+        # Predict using trained KNN model
+        y_pred = self.knn_model.predict(X_test_lda)
+
+        # Evaluation
+        print("Test Accuracy:", accuracy_score(y_test, y_pred))
+        print("Test Classification Report:\n", classification_report(y_test, y_pred))
+
+        # Confusion Matrix
+        cm = confusion_matrix(y_test, y_pred)
+        labels = sorted(list(set(y_test)))
+
+        plt.figure(figsize=(8, 6))
+        sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", xticklabels=labels, yticklabels=labels)
+        plt.xlabel("Predicted Label")
+        plt.ylabel("True Label")
+        plt.title("Confusion Matrix on Test Set")
+        plt.tight_layout()
+        plt.show()
+        
+
+        #Save features and split datasets
         #classifier.save_to_csv(combined_features, all_labels, 'combined_features_with_labels.csv')
         #classifier.save_to_csv(color_histograms, all_labels, 'color_histograms_with_labels.csv')
         #classifier.save_to_csv(texture_features, all_labels, 'texture_features_with_labels.csv')
