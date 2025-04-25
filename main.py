@@ -64,6 +64,50 @@ def visualize_classification(image, tile_grid, crown_grid, regions):
     # cv2.imwrite("classified_output.jpg", image)  # Uncomment to save output
 
 
+# Visualize the scores for each region on the original image, only colored with an outline
+def visualize_scores(image, regions):
+    if len(image.shape) == 2:
+        vis_image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
+    else:
+        vis_image = image.copy()
+
+    tile_height, tile_width = vis_image.shape[0] // 5, vis_image.shape[1] // 5
+
+    for region in regions:
+        color = tuple(random.randint(50, 255) for _ in range(3))
+
+        # Draw outline for each tile
+        for (i, j) in region['tiles']:
+            y1, y2 = i * tile_height, (i + 1) * tile_height
+            x1, x2 = j * tile_width, (j + 1) * tile_width
+            cv2.rectangle(vis_image, (x1, y1), (x2, y2), color, 2)
+
+        # Draw the score on the first tile in the region
+        first_i, first_j = region['tiles'][0]
+        y1, y2 = first_i * tile_height, (first_i + 1) * tile_height
+        x1, x2 = first_j * tile_width, (first_j + 1) * tile_width
+        center_x = (x1 + x2) // 2
+        center_y = (y1 + y2) // 2
+
+        cv2.putText(vis_image, f"{region['score']}", (center_x - 10, center_y + 5),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2, cv2.LINE_AA)
+        
+        # Write the complete score on the bottom left corner of the image
+        cv2.putText(vis_image, f"Total Score: {sum(region['score'] for region in regions)}", (10, vis_image.shape[0] - 10),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2, cv2.LINE_AA)
+        
+
+    cv2.imshow("Score Visualization", vis_image)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
+
+
+
+
+
+
+
 def run_score_comparison_test(image_path, classifier, crown_detector):
     total = len(point_1_74)
     correct = 0
@@ -110,7 +154,9 @@ def main():
 
     crown_templates = [
         r"Reference_tiles\reference_crown_small1.jpg",
-        r"Reference_tiles\reference_crown2.jpg"
+        r"Reference_tiles\reference_crown2.jpg",
+        r"Reference_tiles\reference_crown.jpg",
+        r"Reference_tiles\reference_crown3.jpg"
     ]
     crown_detector = CrownDetector(crown_templates)
 
@@ -134,13 +180,13 @@ def main():
         print(f"Tiles: {region['tiles']}")
         print(f"Score: {region['score']}\n")
 
+    visualize_scores(img, all_regions)
     visualize_classification(img, tile_grid, crown_grid, all_regions)
     run_score_comparison_test(image_path, classifier, crown_detector)
+   
 
 
 if __name__ == "__main__":
     main()
-
-
 
 
