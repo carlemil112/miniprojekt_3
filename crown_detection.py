@@ -98,12 +98,13 @@ if __name__ == "__main__":
     # Angiv paths til dine templates
     template_paths = [
         r"Reference_tiles\reference_crown_small1.jpg",
-        r"Reference_tiles\reference_crown2.jpg"
+        r"Reference_tiles\reference_crown2.jpg",
+        r"Reference_tiles\reference_crown.jpg"
     ]
     
     detector = CrownDetector(template_paths)
 
-    image_paths = glob.glob(r"Cropped and perspective corrected boards\*.jpg")[-10:]
+    image_paths = glob.glob(r"Cropped and perspective corrected boards\*.jpg")[:3]
 
     for path in image_paths:
         result_img = detector.process_board_image(path)
